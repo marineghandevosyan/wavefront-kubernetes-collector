@@ -2,6 +2,7 @@ package wavefront
 
 import (
 	"fmt"
+	"github.com/wavefronthq/wavefront-kubernetes-collector/internal/util"
 	"net/url"
 	"strconv"
 	"strings"
@@ -133,6 +134,7 @@ func (sink *wavefrontSink) processMetricSets(metricSets map[string]*metrics.Metr
 	glog.V(2).Infof("received metric sets: %d", len(metricSets))
 
 	metricCounter := 0
+	nodeName := util.GetNodeName()
 
 	for _, key := range sortedMetricSetKeys(metricSets) {
 		ms := metricSets[key]
@@ -165,13 +167,15 @@ func (sink *wavefrontSink) processMetricSets(metricSets map[string]*metrics.Metr
 			}
 
 			ts := ts.Unix()
-			source := ""
-			if metricType == "cluster" {
-				source = sink.ClusterName
-			} else if metricType == "ns" {
-				source = tags["namespace_name"] + "-ns"
-			} else {
-				source = hostname
+			source := nodeName
+			if source == "" {
+				if metricType == "cluster" {
+					source = sink.ClusterName
+				} else if metricType == "ns" {
+					source = tags["namespace_name"] + "-ns"
+				} else {
+					source = hostname
+				}
 			}
 			processTags(tags)
 			sink.sendPoint(sink.cleanMetricName(metricType, metricName), value, ts, source, tags)
@@ -189,7 +193,10 @@ func (sink *wavefrontSink) processMetricSets(metricSets map[string]*metrics.Metr
 			}
 
 			ts := ts.Unix()
-			source := hostname
+			source := nodeName
+			if source == "" {
+				source = hostname
+			}
 			for labelName, labelValue := range metric.Labels {
 				tags[labelName] = labelValue
 			}
