@@ -1,0 +1,37 @@
+## Discovery configuration examples
+## Use the sections below in your values file to enable auto-discovery
+## Some of these will require you to sepcify some details specific to your environment such as user/passwords
+
+## Ensure you include the following object structure (collector.discovery.config), 
+## then copy / paste the appropriate snippets you need below 
+collector:
+  discovery:
+    config:
+
+    ## auto-discover mongodb pods (replace USER:PASSWORD)  
+    - name: mongodb
+      type: telegraf/mongodb
+      selectors:
+        images:
+        - '*mongodb:*'
+      port: 27017
+      conf: |
+        servers = ["mongodb://USER:PASSWORD@${host}:${port}"]
+        gather_perdb_stats = true
+      filters:
+        metricBlacklist:
+        - 'mongodb.member.status'
+        - 'mongodb.state'
+        - 'mongodb.db.stats.type'
+
+    ## auto-discover rabbitmq pods (replace USER and PASSWORD)
+    - name: rabbitmq
+      type: telegraf/rabbitmq
+      selectors:
+        images:
+        - '*rabbitmq:*'
+      port: 15672
+      conf: |
+        url = "http://${host}:${port}"
+        username = "USER"
+        password = "PASSWORD"
